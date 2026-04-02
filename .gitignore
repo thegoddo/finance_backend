@@ -1,3 +1,26 @@
+# Dependencies
 node_modules/
+dist/
+
+# Environment Variables (CRITICAL: Never commit this)
 .env
+.env.test
+.env.local
+
+# Prisma
 /generated/prisma
+/prisma/migrations/*.sql
+# Keep the migration folder itself, but you can ignore specific logs if needed
+# prisma/migrations/**/*.log
+
+# Application Logs (New: Prevents local logs from bloating your repo)
+logs/*.log
+logs/
+
+# MacOS System Files
+.DS_Store
+
+# Debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*

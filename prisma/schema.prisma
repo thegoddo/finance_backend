@@ -1,3 +1,17 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
 enum UserStatus {
   ACTIVE
   INACTIVE
@@ -20,17 +34,17 @@ model User {
   password  String
   status    UserStatus @default(ACTIVE)
   role      UserRole   @default(VIEWER)
-  records   Record[]   // Relation: A user can own many records
+  records   Record[]
   createdAt DateTime   @default(now())
 }
 
 model Record {
-  id          String          @id @default(uuid())
-  amount      Float
-  type        TransactionType
-  category    String          // e.g., "Salary", "Food", "Rent"
-  date        DateTime        @default(now())
-  notes       String?
-  userId      String
-  user        User            @relation(fields: [userId], references: [id])
+  id       String          @id @default(uuid())
+  amount   Float
+  type     TransactionType
+  category String
+  date     DateTime        @default(now())
+  notes    String?
+  userId   String
+  user     User            @relation(fields: [userId], references: [id])
 }
