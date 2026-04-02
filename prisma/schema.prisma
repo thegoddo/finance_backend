@@ -1,0 +1,36 @@
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum UserRole {
+  ADMIN
+  ANALYST
+  VIEWER
+}
+
+enum TransactionType {
+  INCOME
+  EXPENSE
+}
+
+model User {
+  id        String     @id @default(uuid())
+  email     String     @unique
+  password  String
+  status    UserStatus @default(ACTIVE)
+  role      UserRole   @default(VIEWER)
+  records   Record[]   // Relation: A user can own many records
+  createdAt DateTime   @default(now())
+}
+
+model Record {
+  id          String          @id @default(uuid())
+  amount      Float
+  type        TransactionType
+  category    String          // e.g., "Salary", "Food", "Rent"
+  date        DateTime        @default(now())
+  notes       String?
+  userId      String
+  user        User            @relation(fields: [userId], references: [id])
+}
