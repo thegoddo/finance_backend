@@ -9,6 +9,10 @@ const app = express();
 app.use(express.json());
 app.use(requestLogger); // This starts the file logging for every route
 
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(specs)); //swagger page
+
+logger.info("Swagger docs available at http://localhost:5000/api-docs");
+
 // Global Error Handler (Log every unhandled error to error.log)
 app.use((err, req, res, next) => {
   logger.error(`${err.message}`, {
