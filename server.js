@@ -5,6 +5,7 @@ import specs from "./lib/swagger.js";
 import express from "express";
 import requestLogger from "./middlewares/logMiddleware.js";
 import logger from "./lib/logger.js";
+import recordRoutes from "./routes/recordRoutes.js";
 
 const app = express();
 
@@ -29,5 +30,8 @@ app.use((err, req, res, next) => {
 process.on("unhandledRejection", (reason) => {
   logger.error(`Unhandled Rejection: ${reason}`);
 });
+
+//routes
+app.use("/api/record", recordRoutes);
 
 app.listen(5000, () => logger.info("Server started on port 5000"));
