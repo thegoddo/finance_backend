@@ -1,5 +1,7 @@
 import dotenv from "dotenv";
 dotenv.config();
+import swaggerUi from "swagger-ui-express";
+import specs from "./lib/swagger.js";
 import express from "express";
 import requestLogger from "./middlewares/logMiddleware.js";
 import logger from "./lib/logger.js";
