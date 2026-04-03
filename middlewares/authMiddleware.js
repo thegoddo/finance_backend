@@ -11,12 +11,12 @@ export const authMiddleware = async (req, res, next) => {
 
     const decoded = jwt.verify(token, process.env.SECRET);
 
-    req.user = prisma.user.findUnique({
+    const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
       select: { id: true, email: true, role: true, status: true },
     });
 
-    if (!user || user.status == "INACTIVE") {
+    if (!user || user.status === "INACTIVE") {
       return res
         .status(401)
         .json({ message: "User not authorized or account inactive." });
@@ -36,5 +36,7 @@ export const authorize = (...roles) => {
         message: `User role ${req.user.role} is not authorized for this action.`,
       });
     }
+
+    next();
   };
 };
