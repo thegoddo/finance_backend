@@ -3,14 +3,21 @@ dotenv.config();
 import swaggerUi from "swagger-ui-express";
 import specs from "./lib/swagger.js";
 import express from "express";
+import cookieParser from "cookie-parser";
 import requestLogger from "./middlewares/logMiddleware.js";
 import logger from "./lib/logger.js";
 import recordRoutes from "./routes/recordRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
+import dashboardRoutes from "./routes/dashboardRoutes.js";
+
+if (!process.env.SECRET) {
+  throw new Error("SECRET environment variable is required for JWT auth.");
+}
 
 const app = express();
 
 app.use(express.json());
+app.use(cookieParser());
 app.use(requestLogger); // This starts the file logging for every route
 
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(specs)); //swagger page
@@ -20,7 +27,7 @@ logger.info("Swagger docs available at http://localhost:5000/api-docs");
 //routes
 app.use("/api/record/", recordRoutes);
 app.use("/api/auth/", authRoutes);
-app.use("/api/dashboard");
+app.use("/api/dashboard", dashboardRoutes);
 
 // Global Error Handler (Log every unhandled error to error.log)
 app.use((err, req, res, next) => {

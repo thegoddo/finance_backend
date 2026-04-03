@@ -111,10 +111,10 @@ const router = express.Router();
  * /api/record:
  *   get:
  *     summary: Get all financial records
- *     description: Return the authenticated user's records with optional filters.
+ *     description: Return the authenticated user's records with optional filters. Date filters are inclusive (`startDate` uses `>=`, `endDate` uses `<=`) and should be passed as ISO 8601 date-time values.
  *     tags: [Records]
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     parameters:
  *       - in: query
  *         name: type
@@ -127,14 +127,18 @@ const router = express.Router();
  *           type: string
  *       - in: query
  *         name: startDate
+ *         description: Inclusive lower bound for record date/time. Example for day filtering start - `2026-04-03T00:00:00.000Z`.
  *         schema:
  *           type: string
  *           format: date-time
+ *           example: 2026-04-03T00:00:00.000Z
  *       - in: query
  *         name: endDate
+ *         description: Inclusive upper bound for record date/time. Example for full-day filtering end - `2026-04-03T23:59:59.999Z`.
  *         schema:
  *           type: string
  *           format: date-time
+ *           example: 2026-04-03T23:59:59.999Z
  *     responses:
  *       200:
  *         description: Records fetched successfully
@@ -162,7 +166,7 @@ const router = express.Router();
  *     description: Create a new financial record for the authenticated user.
  *     tags: [Records]
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -201,7 +205,7 @@ const router = express.Router();
  *     description: Update an existing record that belongs to the authenticated user.
  *     tags: [Records]
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -246,7 +250,7 @@ const router = express.Router();
  *     description: Delete a record by id. Only ADMIN role can perform this action.
  *     tags: [Records]
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     parameters:
  *       - in: path
  *         name: id

@@ -25,10 +25,6 @@ const router = express.Router();
  *           type: string
  *           format: password
  *           example: StrongPassword123!
- *         role:
- *           type: string
- *           enum: [VIEWER, ANALYST, ADMIN]
- *           example: VIEWER
  *
  *     LoginUserRequest:
  *       type: object
@@ -49,8 +45,9 @@ const router = express.Router();
  *       type: object
  *       properties:
  *         id:
- *           type: integer
- *           example: 1
+ *           type: string
+ *           format: uuid
+ *           example: 99c96034-d4ff-4669-ae1a-34162d96ab60
  *         email:
  *           type: string
  *           format: email
@@ -81,7 +78,7 @@ const router = express.Router();
  * /api/auth/user/register:
  *   post:
  *     summary: Register a new user
- *     description: Create a new user account, issue a JWT, and set it as an HTTP-only cookie.
+ *     description: Create a new user account as VIEWER role, issue a JWT, and set it as an HTTP-only cookie.
  *     tags: [Auth]
  *     requestBody:
  *       required: true

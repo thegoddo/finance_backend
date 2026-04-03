@@ -11,7 +11,7 @@ const generateToken = (user) => {
 
 export const registerUser = async (req, res) => {
   try {
-    const { email, password, role } = req.body;
+    const { email, password } = req.body;
 
     const isUserAlreadyExists = await prisma.user.findUnique({
       where: { email },
@@ -27,7 +27,7 @@ export const registerUser = async (req, res) => {
       data: {
         email,
         password: hashedPassword,
-        role: role?.toUpperCase() || "VIEWER",
+        role: "VIEWER",
         status: "ACTIVE",
       },
     });

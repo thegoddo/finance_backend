@@ -1,4 +1,5 @@
 import prisma from "../lib/prisma.js";
+import logger from "../lib/logger.js";
 
 //@desc Create a financial record
 // @access Private(Admin, Analyst)

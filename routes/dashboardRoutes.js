@@ -90,7 +90,7 @@ const router = express.Router();
  *     description: Return summary totals, category breakdown, recent activity, and trends for the authenticated user.
  *     tags: [Dashboard]
  *     security:
- *       - bearerAuth: []
+ *       - cookieAuth: []
  *     responses:
  *       200:
  *         description: Dashboard data fetched successfully
