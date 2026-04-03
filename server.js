@@ -9,6 +9,7 @@ import logger from "./lib/logger.js";
 import recordRoutes from "./routes/recordRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
 import dashboardRoutes from "./routes/dashboardRoutes.js";
+import userRoutes from "./routes/userRoutes.js";
 
 if (!process.env.SECRET) {
   throw new Error("SECRET environment variable is required for JWT auth.");
@@ -28,6 +29,7 @@ logger.info("Swagger docs available at http://localhost:5000/api-docs");
 app.use("/api/record/", recordRoutes);
 app.use("/api/auth/", authRoutes);
 app.use("/api/dashboard", dashboardRoutes);
+app.use("/api/users", userRoutes);
 
 // Global Error Handler (Log every unhandled error to error.log)
 app.use((err, req, res, next) => {

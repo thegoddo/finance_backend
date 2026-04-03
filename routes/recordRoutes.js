@@ -111,7 +111,7 @@ const router = express.Router();
  * /api/record:
  *   get:
  *     summary: Get all financial records
- *     description: Return the authenticated user's records with optional filters. Date filters are inclusive (`startDate` uses `>=`, `endDate` uses `<=`) and should be passed as ISO 8601 date-time values.
+ *     description: Return the authenticated user's records with optional filters. Access is restricted to ADMIN and ANALYST roles. Date filters are inclusive (`startDate` uses `>=`, `endDate` uses `<=`) and should be passed as ISO 8601 date-time values.
  *     tags: [Records]
  *     security:
  *       - cookieAuth: []
@@ -150,6 +150,12 @@ const router = express.Router();
  *                 $ref: '#/components/schemas/Record'
  *       401:
  *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiError'
+ *       403:
+ *         description: Forbidden. Requires ADMIN or ANALYST role.
  *         content:
  *           application/json:
  *             schema:
@@ -289,8 +295,8 @@ const router = express.Router();
  *               $ref: '#/components/schemas/ApiError'
  */
 
-// Everyone can view
-router.get("/", protect, authorize("ADMIN", "ANALYST", "VIEWER"), getRecords);
+// Admin and Analyst can view records
+router.get("/", protect, authorize("ADMIN", "ANALYST"), getRecords);
 
 // Admin and Analyst can create and update
 router.post("/", protect, authorize("ADMIN", "ANALYST"), createRecord);
