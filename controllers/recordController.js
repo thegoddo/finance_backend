@@ -64,7 +64,9 @@ export const updateRecord = async (req, res) => {
     // Verify ownership before updating
     const existingRecord = await prisma.record.findUnique({ where: { id } });
     if (!existingRecord || existingRecord.userId !== req.user.id) {
-      return res.status(404).json({ message: "Record not found or unauthorized" });
+      return res
+        .status(404)
+        .json({ message: "Record not found or unauthorized" });
     }
 
     const updatedRecord = await prisma.record.update({
@@ -81,5 +83,22 @@ export const updateRecord = async (req, res) => {
     res.status(200).json(updatedRecord);
   } catch (error) {
     res.status(500).json({ message: "Error updating record." });
+  }
+};
+
+// @desc    Delete a record
+// @access  Private (Admin)
+export const deleteRecord = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Only Admin is usually allowed to delete (per project specs)
+    await prisma.record.delete({
+      where: { id },
+    });
+
+    res.status(200).json({ message: "Record deleted successfully" });
+  } catch (error) {
+    res.status(500).json({ message: "Error deleting record." });
   }
 };
