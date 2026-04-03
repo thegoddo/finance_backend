@@ -8,6 +8,7 @@ Backend API for financial records, dashboard analytics, and role-based user mana
 - Prisma ORM
 - MySQL
 - JWT (HTTP-only cookie auth)
+- Zod validation
 - Swagger UI (`/api-docs`)
 
 ## Core Features
@@ -33,6 +34,7 @@ Backend API for financial records, dashboard analytics, and role-based user mana
   - trends (last 6 months)
 - Rate limiting
 - API documentation via Swagger
+- Unit and integration tests (Vitest + Supertest)
 
 ## RBAC Matrix
 
@@ -80,6 +82,18 @@ BOOTSTRAP_ADMIN_PASSWORD=StrongPassword123!
 
 ```bash
 npm install
+```
+
+## Run Tests
+
+```bash
+npm test
+```
+
+Watch mode:
+
+```bash
+npm run test:watch
 ```
 
 ## Database Setup
@@ -149,6 +163,7 @@ It will:
 - `POST /api/record` (ADMIN, ANALYST)
 - `PUT /api/record/:id` (ADMIN, ANALYST)
 - `DELETE /api/record/:id` (ADMIN, soft delete)
+- `PATCH /api/record/:id/restore` (ADMIN, restore soft-deleted record)
 
 ### Dashboard
 
@@ -171,11 +186,16 @@ Global limiter is enabled:
 ## Error Handling
 
 - Standard HTTP status codes used across controllers
-- Validation responses for common invalid inputs
+- Zod-based validation for auth, records, and user-management payloads
 - Global error handler in `server.js`
 
-## Optional Next Improvements
+## Completed Optional Enhancements
 
-- Add restore endpoint for soft-deleted records
-- Add unit/integration tests
-- Add stronger schema validation (e.g., Zod/Joi)
+- Authentication using JWT cookies
+- Pagination for record listing
+- Search support for records
+- Soft delete + restore endpoint
+- Rate limiting
+- Unit/integration tests
+- API documentation
+- Stronger schema validation with Zod

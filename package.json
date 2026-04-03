@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "bootstrap-admin": "node utils/bootstrapAdmin.js"
   },
   "keywords": [],
@@ -28,9 +29,12 @@
     "socket.io": "^4.8.3",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1",
-    "winston": "^3.19.0"
+    "winston": "^3.19.0",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
-    "prisma": "^7.6.0"
+    "prisma": "^7.6.0",
+    "supertest": "^7.2.2",
+    "vitest": "^4.1.2"
   }
 }

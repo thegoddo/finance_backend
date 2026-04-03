@@ -2,6 +2,8 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import prisma from "../lib/prisma.js"; // Ensure .js extension
 import logger from "../lib/logger.js";
+import { loginSchema, registerSchema } from "../lib/validationSchemas.js";
+import { getValidationMessage } from "../lib/validation.js";
 
 const generateToken = (user) => {
   return jwt.sign({ userId: user.id, role: user.role }, process.env.SECRET, {
@@ -11,7 +13,14 @@ const generateToken = (user) => {
 
 export const registerUser = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const parsedBody = registerSchema.safeParse(req.body);
+    if (!parsedBody.success) {
+      return res.status(400).json({
+        message: getValidationMessage(parsedBody.error),
+      });
+    }
+
+    const { email, password } = parsedBody.data;
 
     const isUserAlreadyExists = await prisma.user.findUnique({
       where: { email },
@@ -56,13 +65,14 @@ export const registerUser = async (req, res) => {
 
 export const loginUser = async (req, res) => {
   try {
-    const { email, password } = req.body;
-
-    if (!email || !password) {
-      return res
-        .status(400)
-        .json({ message: "Email and password are required" });
+    const parsedBody = loginSchema.safeParse(req.body);
+    if (!parsedBody.success) {
+      return res.status(400).json({
+        message: getValidationMessage(parsedBody.error),
+      });
     }
+
+    const { email, password } = parsedBody.data;
 
     const user = await prisma.user.findUnique({
       where: { email },

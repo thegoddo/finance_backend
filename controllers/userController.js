@@ -1,9 +1,13 @@
 import bcrypt from "bcryptjs";
 import prisma from "../lib/prisma.js";
 import logger from "../lib/logger.js";
-
-const VALID_ROLES = ["ADMIN", "ANALYST", "VIEWER"];
-const VALID_STATUS = ["ACTIVE", "INACTIVE"];
+import {
+  createUserByAdminSchema,
+  updateUserRoleSchema,
+  updateUserStatusSchema,
+  uuidParamSchema,
+} from "../lib/validationSchemas.js";
+import { getValidationMessage } from "../lib/validation.js";
 
 export const getUsers = async (req, res) => {
   try {
@@ -27,38 +31,16 @@ export const getUsers = async (req, res) => {
 
 export const createUserByAdmin = async (req, res) => {
   try {
-    const { email, password, role, status } = req.body;
-
-    if (!email || !password) {
-      return res
-        .status(400)
-        .json({ message: "Email and password are required." });
-    }
-
-    if (typeof email !== "string" || !email.includes("@")) {
-      return res.status(400).json({ message: "A valid email is required." });
-    }
-
-    if (typeof password !== "string" || password.length < 8) {
+    const parsedBody = createUserByAdminSchema.safeParse(req.body);
+    if (!parsedBody.success) {
       return res.status(400).json({
-        message: "Password must be a string with at least 8 characters.",
+        message: getValidationMessage(parsedBody.error),
       });
     }
 
-    const normalizedRole = role ? String(role).toUpperCase() : "VIEWER";
-    const normalizedStatus = status ? String(status).toUpperCase() : "ACTIVE";
-
-    if (!VALID_ROLES.includes(normalizedRole)) {
-      return res.status(400).json({
-        message: `Invalid role. Allowed values: ${VALID_ROLES.join(", ")}.`,
-      });
-    }
-
-    if (!VALID_STATUS.includes(normalizedStatus)) {
-      return res.status(400).json({
-        message: `Invalid status. Allowed values: ${VALID_STATUS.join(", ")}.`,
-      });
-    }
+    const { email, password, role, status } = parsedBody.data;
+    const normalizedRole = role || "VIEWER";
+    const normalizedStatus = status || "ACTIVE";
 
     const existingUser = await prisma.user.findUnique({
       where: { email: email.toLowerCase() },
@@ -98,20 +80,22 @@ export const createUserByAdmin = async (req, res) => {
 
 export const updateUserRole = async (req, res) => {
   try {
-    const { id } = req.params;
-    const { role } = req.body;
-
-    if (!role) {
-      return res.status(400).json({ message: "Role is required." });
-    }
-
-    const normalizedRole = String(role).toUpperCase();
-
-    if (!VALID_ROLES.includes(normalizedRole)) {
+    const parsedParams = uuidParamSchema.safeParse(req.params);
+    if (!parsedParams.success) {
       return res.status(400).json({
-        message: `Invalid role. Allowed values: ${VALID_ROLES.join(", ")}.`,
+        message: getValidationMessage(parsedParams.error),
       });
     }
+
+    const parsedBody = updateUserRoleSchema.safeParse(req.body);
+    if (!parsedBody.success) {
+      return res.status(400).json({
+        message: getValidationMessage(parsedBody.error),
+      });
+    }
+
+    const { id } = parsedParams.data;
+    const { role } = parsedBody.data;
 
     const user = await prisma.user.findUnique({ where: { id } });
     if (!user) {
@@ -120,7 +104,7 @@ export const updateUserRole = async (req, res) => {
 
     const updatedUser = await prisma.user.update({
       where: { id },
-      data: { role: normalizedRole },
+      data: { role },
       select: {
         id: true,
         email: true,
@@ -142,20 +126,22 @@ export const updateUserRole = async (req, res) => {
 
 export const updateUserStatus = async (req, res) => {
   try {
-    const { id } = req.params;
-    const { status } = req.body;
-
-    if (!status) {
-      return res.status(400).json({ message: "Status is required." });
-    }
-
-    const normalizedStatus = String(status).toUpperCase();
-
-    if (!VALID_STATUS.includes(normalizedStatus)) {
+    const parsedParams = uuidParamSchema.safeParse(req.params);
+    if (!parsedParams.success) {
       return res.status(400).json({
-        message: `Invalid status. Allowed values: ${VALID_STATUS.join(", ")}.`,
+        message: getValidationMessage(parsedParams.error),
       });
     }
+
+    const parsedBody = updateUserStatusSchema.safeParse(req.body);
+    if (!parsedBody.success) {
+      return res.status(400).json({
+        message: getValidationMessage(parsedBody.error),
+      });
+    }
+
+    const { id } = parsedParams.data;
+    const { status } = parsedBody.data;
 
     const user = await prisma.user.findUnique({ where: { id } });
     if (!user) {
@@ -164,7 +150,7 @@ export const updateUserStatus = async (req, res) => {
 
     const updatedUser = await prisma.user.update({
       where: { id },
-      data: { status: normalizedStatus },
+      data: { status },
       select: {
         id: true,
         email: true,

@@ -4,6 +4,7 @@ import {
   getRecords,
   updateRecord,
   deleteRecord,
+  restoreRecord,
 } from "../controllers/recordController.js";
 import {
   authMiddleware as protect,
@@ -376,6 +377,68 @@ const router = express.Router();
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/ApiError'
+ *
+ * /api/record/{id}/restore:
+ *   patch:
+ *     summary: Restore a soft-deleted record
+ *     description: Restore a record by setting `deletedAt` to null. Only ADMIN role can perform this action.
+ *     tags: [Records]
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     responses:
+ *       200:
+ *         description: Record restored successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Record restored successfully
+ *       400:
+ *         description: Invalid request or record is not deleted
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiError'
+ *       401:
+ *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiError'
+ *       403:
+ *         description: Forbidden. Requires ADMIN role.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiError'
+ *       404:
+ *         description: Record not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiError'
+ *       500:
+ *         description: Server error while restoring record
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiError'
+ *       429:
+ *         description: Too many requests
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiError'
  */
 
 // Admin and Analyst can view records
@@ -387,5 +450,6 @@ router.put("/:id", protect, authorize("ADMIN", "ANALYST"), updateRecord);
 
 // Only Admin can delete
 router.delete("/:id", protect, authorize("ADMIN"), deleteRecord);
+router.patch("/:id/restore", protect, authorize("ADMIN"), restoreRecord);
 
 export default router;

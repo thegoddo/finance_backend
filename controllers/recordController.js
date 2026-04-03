@@ -1,11 +1,26 @@
 import prisma from "../lib/prisma.js";
 import logger from "../lib/logger.js";
+import {
+  createRecordSchema,
+  recordQuerySchema,
+  updateRecordSchema,
+  uuidParamSchema,
+} from "../lib/validationSchemas.js";
+import { getValidationMessage } from "../lib/validation.js";
 
 //@desc Create a financial record
 // @access Private(Admin, Analyst)
 export const createRecord = async (req, res) => {
-  const { amount, type, category, date, notes } = req.body;
   try {
+    const parsedBody = createRecordSchema.safeParse(req.body);
+    if (!parsedBody.success) {
+      return res.status(400).json({
+        message: getValidationMessage(parsedBody.error),
+      });
+    }
+
+    const { amount, type, category, date, notes } = parsedBody.data;
+
     const record = await prisma.record.create({
       data: {
         amount,
@@ -24,26 +39,28 @@ export const createRecord = async (req, res) => {
 };
 
 // @desc Get all records with filtering
-// @access Private (Admin, Analyst, Viewer)
+// @access Private (Admin, Analyst)
 export const getRecords = async (req, res) => {
   try {
-    const { type, category, startDate, endDate, search, page, limit } =
-      req.query;
-
-    const pageNumber = page ? Number.parseInt(page, 10) : 1;
-    const limitNumber = limit ? Number.parseInt(limit, 10) : 10;
-
-    if (Number.isNaN(pageNumber) || pageNumber < 1) {
-      return res
-        .status(400)
-        .json({ message: "page must be a positive integer." });
+    const parsedQuery = recordQuerySchema.safeParse(req.query);
+    if (!parsedQuery.success) {
+      return res.status(400).json({
+        message: getValidationMessage(parsedQuery.error),
+      });
     }
 
-    if (Number.isNaN(limitNumber) || limitNumber < 1 || limitNumber > 100) {
-      return res
-        .status(400)
-        .json({ message: "limit must be an integer between 1 and 100." });
-    }
+    const {
+      type,
+      category,
+      startDate,
+      endDate,
+      search,
+      page: parsedPage,
+      limit: parsedLimit,
+    } = parsedQuery.data;
+
+    const pageNumber = parsedPage ?? 1;
+    const limitNumber = parsedLimit ?? 10;
 
     const filters = {
       userId: req.user.id, // Users only see their own data
@@ -98,8 +115,22 @@ export const getRecords = async (req, res) => {
 // @access  Private (Admin, Analyst)
 export const updateRecord = async (req, res) => {
   try {
-    const { id } = req.params;
-    const { amount, type, category, date, notes } = req.body;
+    const parsedParams = uuidParamSchema.safeParse(req.params);
+    if (!parsedParams.success) {
+      return res.status(400).json({
+        message: getValidationMessage(parsedParams.error),
+      });
+    }
+
+    const parsedBody = updateRecordSchema.safeParse(req.body);
+    if (!parsedBody.success) {
+      return res.status(400).json({
+        message: getValidationMessage(parsedBody.error),
+      });
+    }
+
+    const { id } = parsedParams.data;
+    const { amount, type, category, date, notes } = parsedBody.data;
 
     // Verify ownership before updating
     const existingRecord = await prisma.record.findUnique({ where: { id } });
@@ -116,7 +147,7 @@ export const updateRecord = async (req, res) => {
     const updatedRecord = await prisma.record.update({
       where: { id },
       data: {
-        amount: amount ? parseFloat(amount) : undefined,
+        amount,
         type,
         category,
         date: date ? new Date(date) : undefined,
@@ -134,7 +165,14 @@ export const updateRecord = async (req, res) => {
 // @access  Private (Admin)
 export const deleteRecord = async (req, res) => {
   try {
-    const { id } = req.params;
+    const parsedParams = uuidParamSchema.safeParse(req.params);
+    if (!parsedParams.success) {
+      return res.status(400).json({
+        message: getValidationMessage(parsedParams.error),
+      });
+    }
+
+    const { id } = parsedParams.data;
 
     const existingRecord = await prisma.record.findUnique({ where: { id } });
 
@@ -150,5 +188,39 @@ export const deleteRecord = async (req, res) => {
     res.status(200).json({ message: "Record soft-deleted successfully" });
   } catch (error) {
     res.status(500).json({ message: "Error deleting record." });
+  }
+};
+
+// @desc    Restore a soft-deleted record
+// @access  Private (Admin)
+export const restoreRecord = async (req, res) => {
+  try {
+    const parsedParams = uuidParamSchema.safeParse(req.params);
+    if (!parsedParams.success) {
+      return res.status(400).json({
+        message: getValidationMessage(parsedParams.error),
+      });
+    }
+
+    const { id } = parsedParams.data;
+
+    const existingRecord = await prisma.record.findUnique({ where: { id } });
+
+    if (!existingRecord) {
+      return res.status(404).json({ message: "Record not found." });
+    }
+
+    if (!existingRecord.deletedAt) {
+      return res.status(400).json({ message: "Record is not deleted." });
+    }
+
+    await prisma.record.update({
+      where: { id },
+      data: { deletedAt: null },
+    });
+
+    res.status(200).json({ message: "Record restored successfully" });
+  } catch (error) {
+    res.status(500).json({ message: "Error restoring record." });
   }
 };
