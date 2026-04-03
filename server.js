@@ -18,8 +18,9 @@ app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(specs)); //swagger page
 logger.info("Swagger docs available at http://localhost:5000/api-docs");
 
 //routes
-app.use("/api/record", recordRoutes);
+app.use("/api/record/", recordRoutes);
 app.use("/api/auth/", authRoutes);
+app.use("/api/dashboard");
 
 // Global Error Handler (Log every unhandled error to error.log)
 app.use((err, req, res, next) => {
