@@ -39,12 +39,13 @@ model User {
 }
 
 model Record {
-  id       String          @id @default(uuid())
-  amount   Float
-  type     TransactionType
-  category String
-  date     DateTime        @default(now())
-  notes    String?
-  userId   String
-  user     User            @relation(fields: [userId], references: [id])
+  id        String          @id @default(uuid())
+  amount    Float
+  type      TransactionType
+  category  String
+  date      DateTime        @default(now())
+  notes     String?
+  deletedAt DateTime?
+  userId    String
+  user      User            @relation(fields: [userId], references: [id])
 }

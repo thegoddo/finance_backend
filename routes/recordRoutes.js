@@ -93,10 +93,38 @@ const router = express.Router();
  *         notes:
  *           type: string
  *           example: Monthly salary payment
+ *         deletedAt:
+ *           type: string
+ *           format: date-time
+ *           nullable: true
+ *           example: null
  *         userId:
  *           type: string
  *           format: uuid
  *           example: 551ac54e-0f8c-4ef8-b2fc-cc4ad1594f45
+ *
+ *     RecordsListResponse:
+ *       type: object
+ *       properties:
+ *         data:
+ *           type: array
+ *           items:
+ *             $ref: '#/components/schemas/Record'
+ *         pagination:
+ *           type: object
+ *           properties:
+ *             page:
+ *               type: integer
+ *               example: 1
+ *             limit:
+ *               type: integer
+ *               example: 10
+ *             total:
+ *               type: integer
+ *               example: 42
+ *             totalPages:
+ *               type: integer
+ *               example: 5
  *
  *     ApiError:
  *       type: object
@@ -126,6 +154,27 @@ const router = express.Router();
  *         schema:
  *           type: string
  *       - in: query
+ *         name: search
+ *         description: Partial text search across category and notes.
+ *         schema:
+ *           type: string
+ *           example: salary
+ *       - in: query
+ *         name: page
+ *         description: Page number for pagination (minimum 1).
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           example: 1
+ *       - in: query
+ *         name: limit
+ *         description: Records per page for pagination (1 to 100).
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 100
+ *           example: 10
+ *       - in: query
  *         name: startDate
  *         description: Inclusive lower bound for record date/time. Example for day filtering start - `2026-04-03T00:00:00.000Z`.
  *         schema:
@@ -145,9 +194,13 @@ const router = express.Router();
  *         content:
  *           application/json:
  *             schema:
- *               type: array
- *               items:
- *                 $ref: '#/components/schemas/Record'
+ *               $ref: '#/components/schemas/RecordsListResponse'
+ *       400:
+ *         description: Invalid query parameters
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiError'
  *       401:
  *         description: Unauthorized
  *         content:
@@ -156,6 +209,12 @@ const router = express.Router();
  *               $ref: '#/components/schemas/ApiError'
  *       403:
  *         description: Forbidden. Requires ADMIN or ANALYST role.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiError'
+ *       429:
+ *         description: Too many requests
  *         content:
  *           application/json:
  *             schema:
@@ -200,6 +259,12 @@ const router = express.Router();
  *               $ref: '#/components/schemas/ApiError'
  *       403:
  *         description: Forbidden. Requires ADMIN or ANALYST role.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiError'
+ *       429:
+ *         description: Too many requests
  *         content:
  *           application/json:
  *             schema:
@@ -250,10 +315,16 @@ const router = express.Router();
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/ApiError'
+ *       429:
+ *         description: Too many requests
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiError'
  *
  *   delete:
  *     summary: Delete a financial record
- *     description: Delete a record by id. Only ADMIN role can perform this action.
+ *     description: Soft delete a record by id by setting `deletedAt`. Only ADMIN role can perform this action.
  *     tags: [Records]
  *     security:
  *       - cookieAuth: []
@@ -274,7 +345,7 @@ const router = express.Router();
  *               properties:
  *                 message:
  *                   type: string
- *                   example: Record deleted successfully
+ *                   example: Record soft-deleted successfully
  *       401:
  *         description: Unauthorized
  *         content:
@@ -287,8 +358,20 @@ const router = express.Router();
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/ApiError'
+ *       404:
+ *         description: Record not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiError'
  *       500:
  *         description: Server error while deleting record
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiError'
+ *       429:
+ *         description: Too many requests
  *         content:
  *           application/json:
  *             schema:

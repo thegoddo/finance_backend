@@ -11,7 +11,7 @@ export const getDashboardSummary = async (req, res) => {
     const totalStats = await prisma.record.groupBy({
       by: ["type"],
       _sum: { amount: true },
-      where: { userId },
+      where: { userId, deletedAt: null },
     });
 
     const income =
@@ -23,12 +23,12 @@ export const getDashboardSummary = async (req, res) => {
     const categoryTotals = await prisma.record.groupBy({
       by: ["category", "type"],
       _sum: { amount: true },
-      where: { userId },
+      where: { userId, deletedAt: null },
     });
 
     // 3. Recent Activity (Last 5 transactions)
     const recentActivity = await prisma.record.findMany({
-      where: { userId },
+      where: { userId, deletedAt: null },
       orderBy: { date: "desc" },
       take: 5,
     });
@@ -38,6 +38,7 @@ export const getDashboardSummary = async (req, res) => {
     const allRecords = await prisma.record.findMany({
       where: {
         userId,
+        deletedAt: null,
         date: { gte: new Date(new Date().setMonth(new Date().getMonth() - 6)) },
       },
       select: { amount: true, type: true, date: true },

@@ -27,10 +27,27 @@ export const createRecord = async (req, res) => {
 // @access Private (Admin, Analyst, Viewer)
 export const getRecords = async (req, res) => {
   try {
-    const { type, category, startDate, endDate } = req.query;
+    const { type, category, startDate, endDate, search, page, limit } =
+      req.query;
+
+    const pageNumber = page ? Number.parseInt(page, 10) : 1;
+    const limitNumber = limit ? Number.parseInt(limit, 10) : 10;
+
+    if (Number.isNaN(pageNumber) || pageNumber < 1) {
+      return res
+        .status(400)
+        .json({ message: "page must be a positive integer." });
+    }
+
+    if (Number.isNaN(limitNumber) || limitNumber < 1 || limitNumber > 100) {
+      return res
+        .status(400)
+        .json({ message: "limit must be an integer between 1 and 100." });
+    }
 
     const filters = {
       userId: req.user.id, // Users only see their own data
+      deletedAt: null,
       ...(type && { type }),
       ...(category && { category }),
       ...(startDate || endDate
@@ -41,14 +58,36 @@ export const getRecords = async (req, res) => {
             },
           }
         : {}),
+      ...(search
+        ? {
+            OR: [
+              { category: { contains: search } },
+              { notes: { contains: search } },
+            ],
+          }
+        : {}),
     };
+
+    const skip = (pageNumber - 1) * limitNumber;
+
+    const total = await prisma.record.count({ where: filters });
 
     const records = await prisma.record.findMany({
       where: filters,
       orderBy: { date: "desc" },
+      skip,
+      take: limitNumber,
     });
 
-    res.status(200).json(records);
+    res.status(200).json({
+      data: records,
+      pagination: {
+        page: pageNumber,
+        limit: limitNumber,
+        total,
+        totalPages: Math.ceil(total / limitNumber) || 1,
+      },
+    });
   } catch (error) {
     logger.error("Get Records Error", { error: error.message });
     res.status(500).json({ message: "Error fetching records." });
@@ -64,7 +103,11 @@ export const updateRecord = async (req, res) => {
 
     // Verify ownership before updating
     const existingRecord = await prisma.record.findUnique({ where: { id } });
-    if (!existingRecord || existingRecord.userId !== req.user.id) {
+    if (
+      !existingRecord ||
+      existingRecord.deletedAt ||
+      existingRecord.userId !== req.user.id
+    ) {
       return res
         .status(404)
         .json({ message: "Record not found or unauthorized" });
@@ -93,12 +136,18 @@ export const deleteRecord = async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Only Admin is usually allowed to delete (per project specs)
-    await prisma.record.delete({
+    const existingRecord = await prisma.record.findUnique({ where: { id } });
+
+    if (!existingRecord || existingRecord.deletedAt) {
+      return res.status(404).json({ message: "Record not found." });
+    }
+
+    await prisma.record.update({
       where: { id },
+      data: { deletedAt: new Date() },
     });
 
-    res.status(200).json({ message: "Record deleted successfully" });
+    res.status(200).json({ message: "Record soft-deleted successfully" });
   } catch (error) {
     res.status(500).json({ message: "Error deleting record." });
   }

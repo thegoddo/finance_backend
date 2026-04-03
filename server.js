@@ -4,6 +4,7 @@ import swaggerUi from "swagger-ui-express";
 import specs from "./lib/swagger.js";
 import express from "express";
 import cookieParser from "cookie-parser";
+import rateLimit from "express-rate-limit";
 import requestLogger from "./middlewares/logMiddleware.js";
 import logger from "./lib/logger.js";
 import recordRoutes from "./routes/recordRoutes.js";
@@ -17,8 +18,17 @@ if (!process.env.SECRET) {
 
 const app = express();
 
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 300,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: "Too many requests. Please try again later." },
+});
+
 app.use(express.json());
 app.use(cookieParser());
+app.use(apiLimiter);
 app.use(requestLogger); // This starts the file logging for every route
 
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(specs)); //swagger page
