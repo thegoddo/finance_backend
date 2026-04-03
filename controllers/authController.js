@@ -1,16 +1,20 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import prisma from "../lib/prisma";
+import prisma from "../lib/prisma.js"; // Ensure .js extension
 import logger from "../lib/logger.js";
 
-async function registerUser(req, res) {
+const generateToken = (user) => {
+  return jwt.sign({ userId: user.id, role: user.role }, process.env.SECRET, {
+    expiresIn: "1d",
+  });
+};
+
+export const registerUser = async (req, res) => {
   try {
-    const { username, email, password, role } = req.body;
+    const { email, password, role } = req.body;
 
     const isUserAlreadyExists = await prisma.user.findUnique({
-      where: {
-        email: email,
-      },
+      where: { email },
     });
 
     if (isUserAlreadyExists) {
@@ -23,41 +27,85 @@ async function registerUser(req, res) {
       data: {
         email,
         password: hashedPassword,
-        role: role || "VIEWER",
-        status: "ACTIVEl",
+        role: role?.toUpperCase() || "VIEWER",
+        status: "ACTIVE",
       },
     });
 
-    const token = jwt.sign(
-      { id: user.id, role: user.role },
-      process.env.SECRET,
-      { expiresIn: "1d" },
-    );
+    const token = generateToken(user);
 
-    res.cookie("token", token, { httpOnlye: true });
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      maxAge: 24 * 60 * 60 * 1000,
+    });
 
     res.status(201).json({
       message: "User registered successfully.",
-      user: {
-        id: user.id,
-        email: user.email,
-        username: user.username,
-        role: user.role,
-      },
+      user: { id: user.id, email: user.email, role: user.role },
       token,
     });
   } catch (error) {
     logger.error("Registration Error", {
       message: error.message,
-      stack: error.stack,
       email: req.body.email,
     });
-
-    res.status(500).json({
-      success: false,
-      message: "Server Error during registration. Please try again later.",
-    });
+    res.status(500).json({ message: "Server Error during registration." });
   }
-}
+};
 
-async function loginUser(req, res) {}
+export const loginUser = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res
+        .status(400)
+        .json({ message: "Email and password are required" });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (!user) {
+      return res.status(400).json({ message: "Invalid email or password." });
+    }
+
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+
+    if (!isPasswordValid) {
+      return res.status(400).json({ message: "Invalid email or password." });
+    }
+
+    if (user.status === "INACTIVE") {
+      return res
+        .status(403)
+        .json({ message: "Account is inactive. Contact admin." });
+    }
+
+    const token = generateToken(user);
+
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      maxAge: 24 * 60 * 60 * 1000,
+    });
+
+    res.status(200).json({
+      message: "User logged in successfully!",
+      user: {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+      },
+      token,
+    });
+  } catch (error) {
+    logger.error("Login Error", {
+      message: error.message,
+      email: req.body.email,
+    });
+    res.status(500).json({ message: "Server Error during login." });
+  }
+};
