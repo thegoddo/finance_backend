@@ -6,7 +6,9 @@
   "scripts": {
     "test": "vitest run",
     "test:watch": "vitest",
-    "bootstrap-admin": "node utils/bootstrapAdmin.js"
+    "bootstrap-admin": "node utils/bootstrapAdmin.js",
+    "clean:logs": "node utils/cleanupLogs.js",
+    "clean:logs:dry-run": "node utils/cleanupLogs.js --dry-run"
   },
   "keywords": [],
   "author": "",

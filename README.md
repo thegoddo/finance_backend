@@ -183,6 +183,18 @@ Global limiter is enabled:
 - window: 15 minutes
 - max requests: 300 per IP
 
+## Logging
+
+Logs are written to separate files under `logs/`:
+
+- `combined.log` - general application events
+- `error.log` - server/runtime errors
+- `requests.log` - all HTTP requests and responses
+- `auth.log` - authentication activity
+- `admin.log` - admin/user management activity
+- `security.log` - 401, 403, and 429 responses
+- `database.log` - Prisma query logs
+
 ## Error Handling
 
 - Standard HTTP status codes used across controllers
