@@ -54,3 +54,32 @@ export const getRecords = async (req, res) => {
   }
 };
 
+// @desc    Update a record
+// @access  Private (Admin, Analyst)
+export const updateRecord = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { amount, type, category, date, notes } = req.body;
+
+    // Verify ownership before updating
+    const existingRecord = await prisma.record.findUnique({ where: { id } });
+    if (!existingRecord || existingRecord.userId !== req.user.id) {
+      return res.status(404).json({ message: "Record not found or unauthorized" });
+    }
+
+    const updatedRecord = await prisma.record.update({
+      where: { id },
+      data: {
+        amount: amount ? parseFloat(amount) : undefined,
+        type,
+        category,
+        date: date ? new Date(date) : undefined,
+        notes,
+      },
+    });
+
+    res.status(200).json(updatedRecord);
+  } catch (error) {
+    res.status(500).json({ message: "Error updating record." });
+  }
+};
