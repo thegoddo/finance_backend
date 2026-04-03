@@ -3,7 +3,10 @@ import {
   createRecord,
   getDashboardSummary,
 } from "../controllers/recordController.js";
-import { protect, authorize } from "../middlewares/authMiddleware.js";
+import {
+  authMiddleware as protect,
+  authorize,
+} from "../middlewares/authMiddleware.js";
 
 const router = express.Router();
 
