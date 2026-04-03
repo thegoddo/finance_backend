@@ -1,59 +1,70 @@
 import dotenv from "dotenv";
 dotenv.config();
-import swaggerUi from "swagger-ui-express";
-import specs from "./lib/swagger.js";
+
 import express from "express";
 import cookieParser from "cookie-parser";
 import rateLimit from "express-rate-limit";
-import requestLogger from "./middlewares/logMiddleware.js";
+import swaggerUi from "swagger-ui-express";
+
+import specs from "./lib/swagger.js";
 import logger from "./lib/logger.js";
+import requestLogger from "./middlewares/logMiddleware.js";
+
+// Routes
 import recordRoutes from "./routes/recordRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
 import dashboardRoutes from "./routes/dashboardRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
 
-if (!process.env.SECRET) {
-  throw new Error("SECRET environment variable is required for JWT auth.");
+// Validate essential Env variables
+const JWT_SECRET = process.env.JWT_SECRET || process.env.SECRET;
+if (!JWT_SECRET) {
+  logger.error("FATAL ERROR: JWT_SECRET is not defined.");
+  process.exit(1);
 }
 
 const app = express();
 
+// Rate Limiting
 const apiLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
+  windowMs: 15 * 60 * 1000, // 15 minutes
   max: 300,
-  standardHeaders: true,
-  legacyHeaders: false,
   message: { message: "Too many requests. Please try again later." },
 });
 
+// Middlewares
+app.use(requestLogger); // Log everything first
+app.use(apiLimiter);
 app.use(express.json());
 app.use(cookieParser());
-app.use(apiLimiter);
-app.use(requestLogger); // This starts the file logging for every route
 
-app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(specs)); //swagger page
+// Swagger Documentation
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(specs));
 
-logger.info("Swagger docs available at http://localhost:5000/api-docs");
-
-//routes
-app.use("/api/record/", recordRoutes);
-app.use("/api/auth/", authRoutes);
+// API Routes
+app.use("/api/record", recordRoutes);
+app.use("/api/auth", authRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/users", userRoutes);
 
-// Global Error Handler (Log every unhandled error to error.log)
+// Global Error Handler
 app.use((err, req, res, next) => {
   logger.error(`${err.message}`, {
     url: req.url,
     method: req.method,
     stack: err.stack,
   });
-  res.status(500).json({ message: "Internal Server Error" });
+  res.status(err.status || 500).json({
+    message: err.message || "Internal Server Error",
+  });
 });
 
-// Catch system crashes
+// Handle Uncaught Crashes
 process.on("unhandledRejection", (reason) => {
   logger.error(`Unhandled Rejection: ${reason}`);
 });
 
-app.listen(5000, () => logger.info("Server started on port 5000"));
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, "0.0.0.0", () => {
+  logger.info(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
+});
