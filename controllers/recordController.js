@@ -132,13 +132,11 @@ export const updateRecord = async (req, res) => {
     const { id } = parsedParams.data;
     const { amount, type, category, date, notes } = parsedBody.data;
 
-    // Verify ownership before updating
     const existingRecord = await prisma.record.findUnique({ where: { id } });
-    if (
-      !existingRecord ||
-      existingRecord.deletedAt ||
-      existingRecord.userId !== req.user.id
-    ) {
+    const isOwner = existingRecord?.userId === req.user.id;
+    const isAdmin = req.user.role === "ADMIN";
+
+    if (!existingRecord || existingRecord.deletedAt || (!isOwner && !isAdmin)) {
       return res
         .status(404)
         .json({ message: "Record not found or unauthorized" });
