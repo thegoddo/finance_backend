@@ -1,38 +1,56 @@
 import prisma from "../lib/prisma.js";
 
-// Create Record (Admin & Analyst only)
+//@desc Create a financial record
+// @access Private(Admin, Analyst)
 export const createRecord = async (req, res) => {
-  const { amount, type, category, notes } = req.body;
+  const { amount, type, category, date, notes } = req.body;
   try {
     const record = await prisma.record.create({
-      data: { amount, type, category, notes, userId: req.user.id },
+      data: {
+        amount,
+        type,
+        category,
+        date: date ? new Date(date) : new Date(),
+        notes,
+        userId: req.user.id,
+      },
     });
+    logger.info(`Record created: ${record.id} by user ${req.user.id}`);
     res.status(201).json(record);
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
 };
 
-// Dashboard Summary API
-export const getDashboardSummary = async (req, res) => {
+// @desc Get all records with filtering
+// @access Private (Admin, Analyst, Viewer)
+export const getRecords = async (req, res) => {
   try {
-    const aggregations = await prisma.record.groupBy({
-      by: ["type"],
-      _sum: { amount: true },
-      where: { userId: req.user.id },
-    });
+    const { type, category, startDate, endDate } = req.query;
 
-    const summary = {
-      totalIncome:
-        aggregations.find((a) => a.type === "INCOME")?._sum.amount || 0,
-      totalExpense:
-        aggregations.find((a) => a.type === "EXPENSE")?._sum.amount || 0,
+    const filters = {
+      userId: req.user.id, // Users only see their own data
+      ...(type && { type }),
+      ...(category && { category }),
+      ...(startDate || endDate
+        ? {
+            date: {
+              ...(startDate && { gte: new Date(startDate) }),
+              ...(endDate && { lte: new Date(endDate) }),
+            },
+          }
+        : {}),
     };
 
-    summary.netBalance = summary.totalIncome - summary.totalExpense;
+    const records = await prisma.record.findMany({
+      where: filters,
+      orderBy: { date: "desc" },
+    });
 
-    res.json(summary);
+    res.status(200).json(records);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    logger.error("Get Records Error", { error: error.message });
+    res.status(500).json({ message: "Error fetching records." });
   }
 };
+
